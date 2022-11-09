@@ -10,30 +10,25 @@ import (
 )
 
 func TestRule_Check(t *testing.T) {
-	// person is a testing fixture
-	type person struct {
-		name string
-	}
-
 	type args struct {
 		message string
-		check   valdy.CheckFunc[person]
+		check   valdy.CheckFunc[personFixture]
 	}
 
 	tests := []struct {
 		name    string
-		toCheck person
+		toCheck personFixture
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "If rule check fails, then return rule error",
-			toCheck: person{
+			toCheck: personFixture{
 				name: "John",
 			},
 			args: args{
 				message: "Name should not be John!",
-				check: func(p person) bool {
+				check: func(p personFixture) bool {
 					return p.name != "John"
 				},
 			},
@@ -41,12 +36,12 @@ func TestRule_Check(t *testing.T) {
 		},
 		{
 			name: "Empty rule message is fine too",
-			toCheck: person{
+			toCheck: personFixture{
 				name: "John",
 			},
 			args: args{
 				message: "",
-				check: func(p person) bool {
+				check: func(p personFixture) bool {
 					return p.name != "John"
 				},
 			},
@@ -54,12 +49,12 @@ func TestRule_Check(t *testing.T) {
 		},
 		{
 			name: "If rule check passes, then no error",
-			toCheck: person{
+			toCheck: personFixture{
 				name: "Mikhail",
 			},
 			args: args{
 				message: "Name should be >=5 letters long",
-				check: func(target person) bool {
+				check: func(target personFixture) bool {
 					return utf8.RuneCountInString(target.name) >= 5
 				},
 			},
