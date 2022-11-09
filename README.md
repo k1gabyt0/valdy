@@ -1,1 +1,39 @@
 # valdy
+
+## Description
+
+valdy is a go package, that provides simple and flexible validations.
+
+### Features
+
+- reflection free
+- dependencies free
+- simple minded
+- generics usage
+
+## Table of contents
+
+- [valdy](#valdy)
+  - [Description](#description)
+    - [Features](#features)
+  - [Requirements](#requirements)
+  - [Getting started](#getting-started)
+    - [Installation](#installation)
+  - [Alternatives](#alternatives)
+
+## Requirements
+
+go 1.18+
+
+## Getting started
+
+### Installation
+
+```bash
+go get github.com/k1gabyt0/valdy
+```
+
+## Alternatives
+
+- [ozzo-validation](https://github.com/go-ozzo/ozzo-validation)
+- [govalidator](https://github.com/asaskevich/govalidator)
