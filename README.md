@@ -1,5 +1,7 @@
 # valdy
 
+[![golangci-lint](https://github.com/k1gabyt0/valdy/actions/workflows/golangci-lint.yaml/badge.svg?branch=5-add-golangci-lint-to-project)](https://github.com/k1gabyt0/valdy/actions/workflows/golangci-lint.yaml)
+
 ## Description
 
 valdy is a go package, that provides simple and flexible validations.
