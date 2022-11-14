@@ -54,7 +54,7 @@ func (r *Rule[T]) Check(target T) error {
 		if r.err == nil {
 			return valErr
 		}
-		return From(r.err, valErr)
+		return ValidationErrorFrom(r.err, valErr)
 	}
 
 	return nil
