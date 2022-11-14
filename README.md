@@ -5,13 +5,15 @@
 ## Description
 
 valdy is a go package, that provides simple and flexible validations.
+⚡️ The project is in rapid stage of development, issues and critics are welcome.
 
 ### Features
 
 - reflection free
-- dependencies free
+- dependency free
 - simple minded
 - generics usage
+- multierrors
 
 ## Table of contents
 
