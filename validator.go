@@ -4,6 +4,7 @@ import (
 	"fmt"
 )
 
+// ValidatorMode that tells validator what validation logic to use.
 type ValidatorMode uint
 
 const (
@@ -27,7 +28,7 @@ type Validator[T any] struct {
 	Mode ValidatorMode
 }
 
-// Validate checks target against passed validation rules creators.
+// Validate checks target against passed validation rule creators.
 //
 // If Validator has incorrect Mode, then Validate will return ErrInternal.
 func (v *Validator[T]) Validate(target T, creators ...CreateRuleFunc[T]) error {
@@ -43,17 +44,21 @@ func (v *Validator[T]) Validate(target T, creators ...CreateRuleFunc[T]) error {
 	}
 }
 
-func (v *Validator[T]) runAllValidation(target T, rules []Rule[T]) error {
-	var lastFailedErr error
+func (v *Validator[T]) runAllValidation(target T, rules []Checker[T]) error {
+	failedErrs := make([]error, 0, len(rules))
 	for _, rule := range rules {
 		if err := rule.Check(target); err != nil {
-			lastFailedErr = err
+			failedErrs = append(failedErrs, err)
 		}
 	}
-	return lastFailedErr
+
+	if len(failedErrs) != 0 {
+		return NewValidationError("validation has failed", failedErrs...)
+	}
+	return nil
 }
 
-func (v *Validator[T]) stopOnFirstFailValidation(target T, rules []Rule[T]) error {
+func (v *Validator[T]) stopOnFirstFailValidation(target T, rules []Checker[T]) error {
 	for _, rule := range rules {
 		if err := rule.Check(target); err != nil {
 			return err
@@ -63,8 +68,8 @@ func (v *Validator[T]) stopOnFirstFailValidation(target T, rules []Rule[T]) erro
 }
 
 // extractRules extracts validation rules from creators.
-func extractRules[T any](validationTarget T, creators []CreateRuleFunc[T]) []Rule[T] {
-	rules := make([]Rule[T], 0, len(creators))
+func extractRules[T any](validationTarget T, creators []CreateRuleFunc[T]) []Checker[T] {
+	rules := make([]Checker[T], 0, len(creators))
 	for _, c := range creators {
 		rules = append(rules, c(validationTarget))
 	}

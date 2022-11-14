@@ -8,12 +8,6 @@ import (
 	"github.com/k1gabyt0/valdy"
 )
 
-// personFixture is a struct for testing purposes.
-type personFixture struct {
-	name string
-	age  int
-}
-
 func TestValidator_IncorrectMode(t *testing.T) {
 	const INCORRECT_MODE = 999
 
@@ -25,7 +19,7 @@ func TestValidator_IncorrectMode(t *testing.T) {
 		t.Error("should be error if incorrect mode passed to validator")
 	}
 	if !errors.Is(err, valdy.ErrInternal) {
-		t.Errorf("should be ErrInternal, but got=%v", err)
+		t.Errorf("should be ErrInternal, but got=%q", err)
 	}
 }
 
@@ -45,9 +39,11 @@ func TestValidator_Validate_RunAllMode(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name        string
+		args        args
+		wantErr     bool
+		wantErrs    []error
+		notWantErrs []error
 	}{
 		{
 			name: "Validation against no rules always passes",
@@ -66,26 +62,7 @@ func TestValidator_Validate_RunAllMode(t *testing.T) {
 					name: "John",
 					age:  18,
 				},
-				rules: func() []valdy.CreateRuleFunc[personFixture] {
-					var isAdult valdy.CreateRuleFunc[personFixture] = func(target personFixture) valdy.Rule[personFixture] {
-						return valdy.NewRule(
-							fmt.Sprintf("%s should be adult(18+)", target.name),
-							func(p personFixture) bool {
-								return p.age >= 18
-							},
-						)
-					}
-					var isNamedJohn valdy.CreateRuleFunc[personFixture] = func(target personFixture) valdy.Rule[personFixture] {
-						return valdy.NewRule(
-							fmt.Sprintf("%s should has name 'John'", target.name),
-							func(p personFixture) bool {
-								return p.name == "John"
-							},
-						)
-					}
-
-					return []valdy.CreateRuleFunc[personFixture]{isAdult, isNamedJohn}
-				}(),
+				rules: []valdy.CreateRuleFunc[personFixture]{isAdult, isNamedJohn},
 			},
 		},
 		{
@@ -95,58 +72,20 @@ func TestValidator_Validate_RunAllMode(t *testing.T) {
 					name: "John",
 					age:  17,
 				},
-				rules: func() []valdy.CreateRuleFunc[personFixture] {
-					var isAdult valdy.CreateRuleFunc[personFixture] = func(target personFixture) valdy.Rule[personFixture] {
-						return valdy.NewRule(
-							fmt.Sprintf("%s should be adult(18+)", target.name),
-							func(p personFixture) bool {
-								return p.age >= 18
-							},
-						)
-					}
-					var isNamedJohn valdy.CreateRuleFunc[personFixture] = func(target personFixture) valdy.Rule[personFixture] {
-						return valdy.NewRule(
-							fmt.Sprintf("%s should has name 'John'", target.name),
-							func(p personFixture) bool {
-								return p.name == "John"
-							},
-						)
-					}
-
-					return []valdy.CreateRuleFunc[personFixture]{isAdult, isNamedJohn}
-				}(),
+				rules: []valdy.CreateRuleFunc[personFixture]{isAdult, isNamedJohn},
 			},
-			wantErr: true,
+			wantErrs: []error{ErrNotAdult},
 		},
 		{
 			name: "If all rules failed, then validation error is returned",
 			args: args{
 				target: personFixture{
-					name: "Not John =(",
+					name: "Not John",
 					age:  17,
 				},
-				rules: func() []valdy.CreateRuleFunc[personFixture] {
-					var isAdult = func(target personFixture) valdy.Rule[personFixture] {
-						return valdy.NewRule(
-							fmt.Sprintf("%s should be adult(18+)", target.name),
-							func(p personFixture) bool {
-								return p.age >= 18
-							},
-						)
-					}
-					var isNamedJohn = func(target personFixture) valdy.Rule[personFixture] {
-						return valdy.NewRule(
-							fmt.Sprintf("%s should has name 'John'", target.name),
-							func(p personFixture) bool {
-								return p.name == "John"
-							},
-						)
-					}
-
-					return []valdy.CreateRuleFunc[personFixture]{isAdult, isNamedJohn}
-				}(),
+				rules: []valdy.CreateRuleFunc[personFixture]{isAdult, isNamedJohn},
 			},
-			wantErr: true,
+			wantErrs: []error{ErrNotAdult, ErrIsNotJohn},
 		},
 	}
 
@@ -156,15 +95,21 @@ func TestValidator_Validate_RunAllMode(t *testing.T) {
 			validator.Mode = MODE
 
 			err := validator.Validate(tt.args.target, tt.args.rules...)
-			if err == nil && tt.wantErr {
+			if err == nil && tt.wantErrs != nil {
 				t.Error("wanted error, but didn't get it")
 			}
+
 			if err != nil {
-				if !tt.wantErr {
-					t.Errorf("got error=%v, but didn't asked for this", err)
+				if tt.wantErrs == nil {
+					t.Errorf("got error=%q, but didn't asked for this", err)
+					if !errors.Is(err, valdy.ErrValidation) {
+						t.Errorf("got error=%q, but wanted %q", err, valdy.ErrValidation)
+					}
 				}
-				if !errors.Is(err, valdy.ErrValidation) {
-					t.Errorf("got error=%v, but wanted %v", err, valdy.ErrValidation)
+				for _, errWant := range tt.wantErrs {
+					if !errors.Is(err, errWant) {
+						t.Errorf("got error=%q, but doesn't wrap expected=%q", err, errWant)
+					}
 				}
 			}
 		})
@@ -201,26 +146,7 @@ func TestValidator_Validate_StopOnFirstFailMode(t *testing.T) {
 					name: "John",
 					age:  18,
 				},
-				rules: func() []valdy.CreateRuleFunc[personFixture] {
-					var isAdult valdy.CreateRuleFunc[personFixture] = func(target personFixture) valdy.Rule[personFixture] {
-						return valdy.NewRule(
-							fmt.Sprintf("%s should be adult(18+)", target.name),
-							func(p personFixture) bool {
-								return p.age >= 18
-							},
-						)
-					}
-					var isNamedJohn valdy.CreateRuleFunc[personFixture] = func(target personFixture) valdy.Rule[personFixture] {
-						return valdy.NewRule(
-							fmt.Sprintf("%s should has name 'John'", target.name),
-							func(p personFixture) bool {
-								return p.name == "John"
-							},
-						)
-					}
-
-					return []valdy.CreateRuleFunc[personFixture]{isAdult, isNamedJohn}
-				}(),
+				rules: []valdy.CreateRuleFunc[personFixture]{isAdult, isNamedJohn},
 			},
 		},
 		{
@@ -230,26 +156,7 @@ func TestValidator_Validate_StopOnFirstFailMode(t *testing.T) {
 					name: "John",
 					age:  17,
 				},
-				rules: func() []valdy.CreateRuleFunc[personFixture] {
-					var isAdult valdy.CreateRuleFunc[personFixture] = func(target personFixture) valdy.Rule[personFixture] {
-						return valdy.NewRule(
-							fmt.Sprintf("%s should be adult(18+)", target.name),
-							func(p personFixture) bool {
-								return p.age >= 18
-							},
-						)
-					}
-					var isNamedJohn valdy.CreateRuleFunc[personFixture] = func(target personFixture) valdy.Rule[personFixture] {
-						return valdy.NewRule(
-							fmt.Sprintf("%s should has name 'John'", target.name),
-							func(p personFixture) bool {
-								return p.name == "John"
-							},
-						)
-					}
-
-					return []valdy.CreateRuleFunc[personFixture]{isAdult, isNamedJohn}
-				}(),
+				rules: []valdy.CreateRuleFunc[personFixture]{isAdult, isNamedJohn},
 			},
 			wantErr: true,
 		},
@@ -260,26 +167,7 @@ func TestValidator_Validate_StopOnFirstFailMode(t *testing.T) {
 					name: "Not John =(",
 					age:  17,
 				},
-				rules: func() []valdy.CreateRuleFunc[personFixture] {
-					var isAdult = func(target personFixture) valdy.Rule[personFixture] {
-						return valdy.NewRule(
-							fmt.Sprintf("%s should be adult(18+)", target.name),
-							func(p personFixture) bool {
-								return p.age >= 18
-							},
-						)
-					}
-					var isNamedJohn = func(target personFixture) valdy.Rule[personFixture] {
-						return valdy.NewRule(
-							fmt.Sprintf("%s should has name 'John'", target.name),
-							func(p personFixture) bool {
-								return p.name == "John"
-							},
-						)
-					}
-
-					return []valdy.CreateRuleFunc[personFixture]{isAdult, isNamedJohn}
-				}(),
+				rules: []valdy.CreateRuleFunc[personFixture]{isAdult, isNamedJohn},
 			},
 			wantErr: true,
 		},
@@ -296,12 +184,38 @@ func TestValidator_Validate_StopOnFirstFailMode(t *testing.T) {
 			}
 			if err != nil {
 				if !tt.wantErr {
-					t.Errorf("got error=%v, but didn't asked for this", err)
+					t.Errorf("got error=%q, but didn't asked for this", err)
 				}
 				if !errors.Is(err, valdy.ErrValidation) {
-					t.Errorf("got error=%v, but wanted %v", err, valdy.ErrValidation)
+					t.Errorf("got error=%q, but wanted %q", err, valdy.ErrValidation)
 				}
 			}
 		})
 	}
+}
+
+// personFixture is a struct for testing purposes.
+type personFixture struct {
+	name string
+	age  int
+}
+
+var ErrNotAdult = errors.New("adult check is failed")
+var isAdult = func(target personFixture) valdy.Checker[personFixture] {
+	return valdy.NewRule(
+		fmt.Sprintf("%s should be adult(18+)", target.name),
+		func(p personFixture) bool {
+			return p.age >= 18
+		},
+	).WithError(ErrNotAdult)
+}
+
+var ErrIsNotJohn = errors.New("this is not John")
+var isNamedJohn = func(target personFixture) valdy.Checker[personFixture] {
+	return valdy.NewRule(
+		fmt.Sprintf("%s should has name 'John'", target.name),
+		func(p personFixture) bool {
+			return p.name == "John"
+		},
+	).WithError(ErrIsNotJohn)
 }
