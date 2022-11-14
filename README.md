@@ -10,10 +10,9 @@ valdy is a go package, that provides simple and flexible validations.
 ### Features
 
 - reflection free
-- dependency free
 - simple minded
 - generics usage
-- multierrors
+- multierrors(using [erry](https://github.com/k1gabyt0/erry))
 
 ## Table of contents
 
