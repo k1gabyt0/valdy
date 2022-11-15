@@ -1,6 +1,7 @@
 # valdy
 
 [![golangci-lint](https://github.com/k1gabyt0/valdy/actions/workflows/golangci-lint.yaml/badge.svg?branch=5-add-golangci-lint-to-project)](https://github.com/k1gabyt0/valdy/actions/workflows/golangci-lint.yaml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/k1gabyt0/valdy.svg)](https://pkg.go.dev/github.com/k1gabyt0/valdy)
 
 ## Description
 
