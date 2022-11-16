@@ -49,7 +49,7 @@ func NewRule[T any](message string, check CheckFunc[T]) *Rule[T] {
 //
 // If Check is failed, then error with check's message will be returned.
 func (r *Rule[T]) Check(target T) error {
-	if ok := r.check(target); !ok {
+	if !r.check(target) {
 		valErr := NewValidationError(r.Message)
 		if r.err == nil {
 			return valErr
